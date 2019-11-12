@@ -1,6 +1,6 @@
 #!/Library/anaconda3/envs/LuisChatbot/bin/python
 """
-
+Source : https://github.com/Azure-Samples/cognitive-services-quickstart-code/blob/master/python/LUIS/application_quickstart.py
 """
 from azure.cognitiveservices.language.luis.authoring import LUISAuthoringClient
 from msrest.authentication import CognitiveServicesCredentials
@@ -55,10 +55,12 @@ def add_entities(clientID, app_id, app_version, entityName, roleList):
 
 
 def create_utterance(intent, utterance, *labels):
-    """Add an example LUIS utterance from utterance text and a list of
-       labels.  Each label is a 2-tuple containing a label name and the
-       text within the utterance that represents that label.
-       Utterances apply to a specific intent, which must be specified."""
+    """
+    Add an example LUIS utterance from utterance text and a list of
+    labels.  Each label is a 2-tuple containing a label name and the
+    text within the utterance that represents that label.
+    Utterances apply to a specific intent, which must be specified.
+    """
     text = utterance.lower()
 
     def label(name, value):
@@ -100,36 +102,37 @@ def publish_app(clientID, app_id, app_version):
 if __name__ == "__main__":
     client = initiateConnection()
     print("Connection Completed")
-
-    app_name = "FlightBooking {}".format(datetime.datetime.now())
-    app_desc = "Flight booking app built with LUIS Python SDK."
-    app_version = "0.1"
-    app_locale = "en-us"
-
-    app_id = create_app(client,app_name,app_desc,app_version,app_locale)
+    appName = "FlightBooking {}".format(datetime.datetime.now())
+    appDesc = "Flight booking app built with LUIS Python SDK."
+    appVersion = "0.1"
+    appLocale = "en-us"
+    appId = create_app(client,appName,appDesc,appVersion,appLocale)
     app_newEntity = ["Location", "Class"]
-    app_newEntityRole = [["Origin", "Destination"],[]]
+    app_newEntityRole = [["Origin", "Destination"], []]
+    for i in range(0, len(app_newEntity)):
+        add_entities(client, appId, appVersion, app_newEntity[i], app_newEntityRole[i])
+        pass
+    client.model.add_prebuilt(appId, appVersion, prebuilt_extractor_names=["number", "datetimeV2",
+                                                                           "geographyV2", "ordinal"])
+    compositeEntityId = client.model.add_composite_entity(appId, appVersion, name="Flight",
+                                                          children=["Location", "Class", "number", "datetimeV2",
+                                                                    "geographyV2", "ordinal"])
+    print("compositeEntityId {} added.".format(compositeEntityId))
+    utterances = [create_utterance("FindFlights", "find flights in economy to Madrid",
+                                   ("Flight", "economy to Madrid"),
+                                   ("Location", "Madrid"),
+                                   ("Class", "economy")),
+                  create_utterance("FindFlights", "find flights to London in first class",
+                                   ("Flight", "London in first class"),
+                                   ("Location", "London"),
+                                   ("Class", "first")),
+                  create_utterance("FindFlights", "find flights from seattle to London in first class",
+                                   ("Flight", "flights from seattle to London in first class"),
+                                   ("Location", "London"),
+                                   ("Location", "Seattle"),
+                                   ("Class", "first"))]
+    add_utterances(client, appId, appVersion, utterances)
+    train_app(client, appId, appVersion)
+    publish_app(client, appId, appVersion)
+    print("App creation successful")
 
-    # for i in range(0, len(app_newEntity)):
-
-
-#     client.model.add_prebuilt(app_id, app_version, prebuilt_extractor_names=["number", "datetimeV2", "geographyV2", "ordinal"])
-#
-#     compositeEntityId = client.model.add_composite_entity(app_id, app_version, name="Flight",
-#                                       children=["Location", "Class", "number", "datetimeV2", "geographyV2", "ordinal"])
-#     print("compositeEntityId {} added.".format(compositeEntityId))
-
-
-# utterances = [create_utterance("FindFlights", "find flights in economy to Madrid",
-#                                    ("Flight", "economy to Madrid"),
-#                                    ("Location", "Madrid"),
-#                                    ("Class", "economy")),
-#                   create_utterance("FindFlights", "find flights to London in first class",
-#                                    ("Flight", "London in first class"),
-#                                    ("Location", "London"),
-#                                    ("Class", "first")),
-#                   create_utterance("FindFlights", "find flights from seattle to London in first class",
-#                                    ("Flight", "flights from seattle to London in first class"),
-#                                    ("Location", "London"),
-#                                    ("Location", "Seattle"),
-#                                    ("Class", "first"))]
